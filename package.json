@@ -1,0 +1,25 @@
+{
+  "name": "votegoat",
+  "version": "1.0.0",
+  "description": "The GOAT of the VOTE",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nossonCotlar/votegoat.git"
+  },
+  "author": "nosson",
+  "license": "Unlicense",
+  "bugs": {
+    "url": "https://github.com/nossonCotlar/votegoat/issues"
+  },
+  "homepage": "https://github.com/nossonCotlar/votegoat#readme",
+  "dependencies": {
+    "express": "^4.17.1",
+    "hashids": "^2.2.8",
+    "redis": "^3.1.2",
+    "ws": "^8.2.3"
+  }
+}
