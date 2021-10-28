@@ -14,9 +14,13 @@ const REDIS_PORT = process.env.REDIS_PORT;
 const redisClient = redis.createClient(REDIS_PORT);
 redisClient.on('connect', _ => console.log('Redis Client Connected'));
 redisClient.on('error', (err) => console.log('Redis Client Error', err));
-const rGet    = promisify(redisClient.get).bind(redisClient);
-const rSet    = promisify(redisClient.set).bind(redisClient);
-const rExists = promisify(redisClient.exists).bind(redisClient);
+const rGet      = promisify(redisClient.get).bind(redisClient);
+const rSet      = promisify(redisClient.set).bind(redisClient);
+const rHGet     = promisify(redisClient.hget).bind(redisClient);
+const rHGetAll  = promisify(redisClient.hgetall).bind(redisClient);
+const rHSet     = promisify(redisClient.hset).bind(redisClient);
+const rHIncrBy  = promisify(redisClient.hincrby).bind(redisClient);
+const rExists   = promisify(redisClient.exists).bind(redisClient);
 
 
 // Express stuff
@@ -58,24 +62,20 @@ app.post('/poll', async (req, res) => {
     const meta = {createdBy: ipAddress, createdAt: timestamp};
     const pollId = await createPoll(hashids, meta, options);
     console.log(`Created poll with Poll ID: ${pollId}`)
-    res.json({url: `/poll/${pollId}`});
+    res.json({pollId: pollId, url: `/poll/${pollId}`});
 });
 
 app.post('/vote/:pollId', async (req, res) => {
     pollId = req.params.pollId;
-    const existingPoll = await getPoll(pollId);
-    if(!existingPoll){
+    const exists = await pollExists(pollId);
+    if(!exists){
         res.status(404).json({error: `We couldn't find the poll with ID: ${pollId}`});
         return;
     }
     const option = req.body.option;
     console.log(option);
-    let newPoll = {
-        ...existingPoll
-    }
-    newPoll['options'][option]++;
-    await rSet(`poll:${pollId}`, JSON.stringify(newPoll));
-    res.json(newPoll);
+    const stance = await rHIncrBy(`poll:${pollId}:options`, option, 1);
+    res.json({option: option, currentStance: stance});
 });
 
 app.listen(EXPRESS_PORT, _ => {
@@ -86,21 +86,35 @@ const createPoll = async (hashids, meta, options) => {
     let seed, hashid;
     let exists = true;
     while (exists){
-        seed = Math.floor(Math.random() * 100000);
+        seed = Math.floor(Math.random() * 1000000);
         hashid = hashids.encode(seed);
         console.log(hashid);
-        exists = await rExists(hashid);
+        exists = await rExists(`poll:${hashid}:meta`);
     }
-    optionsObj = {};
+    let optionsArray = [];
     _.forEach(options, option => {
-        optionsObj[option] = 0;
+        optionsArray.push(option, 0);
     });
-    await rSet(`poll:${hashid}`, JSON.stringify({meta: meta, options: optionsObj}));
+
+     // Set Poll Metadata
+    const p1 = rSet(`poll:${hashid}:meta`, JSON.stringify(meta));
+
+    // Set Poll Options
+    const p2 = rHSet(`poll:${hashid}:options`, optionsArray);
+
+    await Promise.all([p1, p2]);
     return hashid;
 }
 
 const getPoll = async (pollId) => {
-    const pollRaw = await rGet(`poll:${pollId}`);
-    const pollInfo = JSON.parse(pollRaw);
-    return pollInfo;
+    const pollOptions = await rHGetAll(`poll:${pollId}:options`);
+    return pollOptions;
+}
+
+const getPollMeta = async (pollId) => {
+    return await rGet(`poll:${pollId}:meta`);
+}
+
+const pollExists = async (pollId) => {
+    return await rExists(`poll:${pollId}:meta`)
 }
