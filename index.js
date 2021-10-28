@@ -5,8 +5,8 @@ const { promisify } = require('util');
 // Hashids stuff
 const Hashids = require('hashids/cjs');
 const HASHIDS_SALT = process.env.HASHIDS_SALT;
-const hashids = new Hashids(HASHIDS_SALT, 15);
-console.log(hashids.encode(1));
+const HASHIDS_LENGTH = parseInt(process.env.HASHIDS_LENGTH);
+const hashids = new Hashids(HASHIDS_SALT, HASHIDS_LENGTH);
 
 // Redis stuff
 const redis = require('redis');
@@ -21,19 +21,38 @@ const rHGetAll  = promisify(redisClient.hgetall).bind(redisClient);
 const rHSet     = promisify(redisClient.hset).bind(redisClient);
 const rHIncrBy  = promisify(redisClient.hincrby).bind(redisClient);
 const rExists   = promisify(redisClient.exists).bind(redisClient);
+const rSAdd     = promisify(redisClient.sadd).bind(redisClient);
 
 
-// Express stuff
+// Express/http stuff
 const express = require('express');
 const { result } = require('lodash');
 const app = express();
+const { createServer } = require('http');
+const httpServer = createServer(app);
 const EXPRESS_PORT = process.env.EXPRESS_PORT;
 
+const WS_PORT = parseInt(process.env.WS_PORT);
+const { Server } = require('socket.io');
+const io = new Server(httpServer);
+
+io.on('connection', async socket => {
+    const socketId = socket.id;
+    const remoteAddress = socket.handshake.address;
+    const pollId = socket.handshake.query.id;
+    console.log(`Socket ${socketId} connected from ${remoteAddress} on poll ${pollId}`);
+    socket.join(`poll:${pollId}:room`);
+    await rSAdd(`poll:${pollId}:subs`, socketId);
+    const pollInfo = await getPoll(pollId);
+    socket.emit("vote", pollInfo);
+});
+
 // Express WS wrapper thingie
-const expressWs = require('express-ws')(app);
+//const expressWs = require('express-ws')(app);
 
 app.use( express.json() );
 app.use( express.urlencoded( {extended: true} ));
+app.use( '/', express.static('static') );
 
 app.get('/poll/:pollId', async (req, res) => {
     res.json(await getPoll(req.params.pollId));
@@ -62,7 +81,7 @@ app.post('/poll', async (req, res) => {
     const meta = {createdBy: ipAddress, createdAt: timestamp};
     const pollId = await createPoll(hashids, meta, options);
     console.log(`Created poll with Poll ID: ${pollId}`)
-    res.json({pollId: pollId, url: `/poll/${pollId}`});
+    res.json({pollId: pollId, url: `/p?id=${pollId}`});
 });
 
 app.post('/vote/:pollId', async (req, res) => {
@@ -78,7 +97,7 @@ app.post('/vote/:pollId', async (req, res) => {
     res.json({option: option, currentStance: stance});
 });
 
-app.listen(EXPRESS_PORT, _ => {
+httpServer.listen(EXPRESS_PORT, _ => {
     console.log(`VoteGoat API listening on port: ${EXPRESS_PORT}`);
 });
 
