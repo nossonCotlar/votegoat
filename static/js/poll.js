@@ -5,7 +5,8 @@ const createPoll = _ => {
     const data = {options: optionsArray};
     $.post('poll', data, (data, status, xhr) => {
         console.log(data);
-        window.location.assign(data.url);
+        console.log(status)
+        if(status == 'success' && data.url) window.location.assign(data.url);
     });
 }
 
