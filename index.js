@@ -42,9 +42,10 @@ io.on('connection', async socket => {
     const pollId = socket.handshake.query.id;
     console.log(`Socket ${socketId} connected from ${remoteAddress} on poll ${pollId}`);
     socket.join(`poll:${pollId}:room`);
-    await rSAdd(`poll:${pollId}:subs`, socketId);
-    const pollInfo = await getPoll(pollId);
-    socket.emit("vote", pollInfo);
+    Promise.all([
+        rSAdd(`poll:${pollId}:subs`, socketId), 
+        emitPollInfoSingle(socket, pollId)
+    ]);
 });
 
 // Express WS wrapper thingie
@@ -92,8 +93,9 @@ app.post('/vote/:pollId', async (req, res) => {
         return;
     }
     const option = req.body.option;
-    console.log(option);
+    console.log(`Placing vote for option "${option}" in poll: ${pollId}`);
     const stance = await rHIncrBy(`poll:${pollId}:options`, option, 1);
+    emitPollInfo(pollId); // when a vote is placed, emit updated poll results to everyone in the room
     res.json({option: option, currentStance: stance});
 });
 
@@ -126,7 +128,8 @@ const createPoll = async (hashids, meta, options) => {
 }
 
 const getPoll = async (pollId) => {
-    const pollOptions = await rHGetAll(`poll:${pollId}:options`);
+    const pollOptionsRaw = await rHGetAll(`poll:${pollId}:options`);
+    const pollOptions = parseObjNumbers(pollOptionsRaw);
     return pollOptions;
 }
 
@@ -136,4 +139,24 @@ const getPollMeta = async (pollId) => {
 
 const pollExists = async (pollId) => {
     return await rExists(`poll:${pollId}:meta`)
+}
+
+const emitPollInfoSingle = async (socket, pollId) => {
+    const pollInfo = await getPoll(pollId);
+    socket.emit("vote", pollInfo);
+}
+
+const emitPollInfo = async (pollId) => {
+    const pollInfo = await getPoll(pollId);
+    io.sockets.in(`poll:${pollId}:room`).emit('vote', pollInfo);
+}
+
+const parseObjNumbers = obj => {
+    let result = {};
+    const entries = Object.entries(obj);
+    for(const i in entries){
+        const k = entries[i][0], v = entries[i][1];
+        result[k] = parseInt(v) === NaN ? v : parseInt(v);
+    }
+    return result;
 }
