@@ -5,12 +5,38 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>VoteGoat</title>
+    <link rel="stylesheet" href="/css/styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
     <script src="https://cdn.socket.io/4.3.2/socket.io.min.js" integrity="sha384-KAZ4DtjNhLChOB/hxXuKqhMLYvx3b5MlT55xPEiNmREKRzeEm+RVPlTnAn0ajQNs" crossorigin="anonymous"></script>
-    <script src="/js/vote.js"></script>
 </head>
 <body>
-    <h1>This is Poll: <span id="poll-id"></span></h1>
-    <p id="poll"></p>
+    <script src="/js/vanilla-toast.min.js"></script>
+    <div id="main-heading">
+        <h1><a id="main-link" href="/">VOTEGOAT</a></h1>
+        <h3 id="slogan">democratize all the things</h3>
+    </div>
+    <div id="link-copy-holder">
+        <input type="text" id="link-copy-text" onclick="this.select()" readonly >
+        <div id="clipboard-svg-holder">
+            <img id="clipboard-svg" src="/assets/clipboard.svg" alt="Copy to Clipboard" width="30" title="Copy to Clipboard" onclick="copyLinkToClipboard()">
+        </div>
+    </div>
+    <div id="sections">
+        <div id="vote-section" class="poll-section">
+            <h1>VOTE!</h1>
+            <div id="vote-options"></div>
+        </div>
+        <div id="poll-section" class="poll-section">
+            <h1>Poll Data:</h1>
+            <div id="poll-metrics-holder">
+                <div class="poll-metric"></div>
+            </div>
+            <div id="poll-data-holder"></div>
+        </div>
+    </div>
 </body>
+<script src="/js/vote.js"></script>
 </html>

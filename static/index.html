@@ -10,13 +10,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Saira+Stencil+One&display=swap" rel="stylesheet">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-    <script src="/js/poll.js"></script>
 </head>
 <body>
-    <h1 id="main-heading">VOTEGOAT</h1>
+    <h1 id="main-heading"><a id="main-link" href="/">VOTEGOAT</a></h1>
     <div id="sections">
         <div id="poll-options" class="poll-section">
-    
+            <h1>Options:</h1>
+            
         </div>
         <div class="poll-section">
             <div id="input-holder">
@@ -26,8 +26,13 @@
             <button id="create-poll" onclick="createPoll()">CREATE!</button>
         </div>
         <div id="poll-presets" class="poll-section">
-
+            <h1>Presets:</h1>
+            <button class="options-preset" option-preset="fibonacci">Fibonacci</button>
+            <button class="options-preset" option-preset="yes_no">Yes / No</button>
+            <button class="options-preset" option-preset="yes_no_maybe">Yes / No / Maybe</button>
+            <button class="options-preset" option-preset="one_thru_ten">1 through 10</button>
         </div>
     </div>
 </body>
+<script src="/js/poll.js"></script>
 </html>
