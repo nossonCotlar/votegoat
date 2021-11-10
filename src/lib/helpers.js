@@ -16,12 +16,10 @@ io.on('connection', async socket => {
 });
 
 const createPoll = async (meta, options) => {
-    let seed, hashid;
+    let hashid;
     let exists = true;
     while (exists){
-        seed = Math.floor(Math.random() * 1000000);
-        hashid = hashids.encode(seed);
-        console.log(hashid);
+        hashid = getRandomHash();
         exists = await rExists(`poll:${hashid}:meta`);
     }
     let optionsArray = [];
@@ -73,4 +71,12 @@ const parseObjNumbers = obj => {
     return result;
 }
 
-module.exports = { createPoll, getPoll, getPollMeta, pollExists, emitPollInfo, emitPollInfoSingle }
+const getRemoteAddress = req => {
+    return req.socket.remoteAddress;
+}
+
+const getRandomHash = _ => {
+    return hashids.encode(Math.floor(Math.random() * 1000000));
+}
+
+module.exports = { createPoll, getPoll, getPollMeta, pollExists, emitPollInfo, emitPollInfoSingle, getRemoteAddress, getRandomHash }

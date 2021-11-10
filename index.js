@@ -5,10 +5,6 @@ require('./src/lib/socketio');
 
 const routes = require('./src/routes');
 
-app.use( express.json() );
-app.use( express.urlencoded( {extended: true} ));
-app.use( '/', express.static('static') );
-
 app.get('/test/:pollId', routes.test.get);
 
 app.get('/poll/:pollId', routes.poll.get);

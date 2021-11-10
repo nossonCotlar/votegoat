@@ -1,5 +1,5 @@
 const { rHIncrBy } = require('../lib/redis');
-const { pollExists, emitPollInfo } = require('../lib/helpers');
+const { pollExists, emitPollInfo, getRemoteAddress } = require('../lib/helpers');
 
 const post = async (req, res) => {
     pollId = req.params.pollId;
@@ -9,6 +9,10 @@ const post = async (req, res) => {
         return;
     }
     const option = req.body.option;
+    if(!option){
+        res.status(400).json({error: 'A vote option must be supplied'});
+        return;
+    }
     console.log(`Placing vote for option "${option}" in poll: ${pollId}`);
     const stance = await rHIncrBy(`poll:${pollId}:options`, option, 1);
     emitPollInfo(pollId); // when a vote is placed, emit updated poll results to everyone in the room
