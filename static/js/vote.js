@@ -39,7 +39,10 @@ const drawVoteOptions = pollData => {
 const placeVote = voteOptionEl => {
     const voteOption = $(voteOptionEl).attr('option-value');
     console.log(`Placing vote for option: ${voteOption}`);
-    $.post(`/vote/${pollId}`, {option: voteOption});
+    $.post(`/vote/${pollId}`, {option: voteOption}, (data, status, xhr) => {
+        console.log(data, status)
+    });
+
 }
 
 const sortOptionsOnVotes = pollData => {

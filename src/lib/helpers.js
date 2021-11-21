@@ -1,7 +1,9 @@
 const _ = require('lodash');
 const io = require('./socketio');
-const hashids = require('./hashids');
+const { getRandomHash } = require('./simpleHelpers');
 const { rHGetAll, rSet, rHSet, rExists, rSAdd } = require('./redis');
+
+console.log("helpers")
 
 io.on('connection', async socket => {
     const socketId = socket.id;
@@ -12,7 +14,7 @@ io.on('connection', async socket => {
     Promise.all([
         rSAdd(`poll:${pollId}:subs`, socketId), 
         emitPollInfoSingle(socket, pollId)
-    ]);
+    ]).catch(err => console.log(err));
 });
 
 const createPoll = async (meta, options) => {
@@ -73,10 +75,6 @@ const parseObjNumbers = obj => {
 
 const getRemoteAddress = req => {
     return req.socket.remoteAddress;
-}
-
-const getRandomHash = _ => {
-    return hashids.encode(Math.floor(Math.random() * 1000000));
 }
 
 module.exports = { createPoll, getPoll, getPollMeta, pollExists, emitPollInfo, emitPollInfoSingle, getRemoteAddress, getRandomHash }
