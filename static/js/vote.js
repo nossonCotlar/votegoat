@@ -12,6 +12,7 @@ socket.on('connect', _ => {
 socket.on('vote', data => {
     console.log(data);
     drawPollData(data);
+    drawPollMetrics(data);
     drawVoteOptions(data);
 });
 
@@ -22,8 +23,46 @@ const drawPollData = pollData => {
     holder.text('');
     for(i in sortedPoll){
         const pollEntry = sortedPoll[i];
-        holder.append(makePollDataEntry(pollEntry[0], pollEntry[1]));
+        holder.append(makePollDataEntry(pollEntry[0], pollEntry[1] == 0 ? '-' : pollEntry[1]));
     }
+}
+
+const drawPollMetrics = pollData => {
+    const entries = Object.entries(pollData);
+    let metrics = [];
+
+    // calculate mean average
+    const allNumbers = entries.reduce((flag, entry) => isNaN(entry[0]) ? false : flag, true);
+    if(allNumbers) {
+        console.log('Calculating Mean Average!')
+        const sum = entries.reduce((sum, entry) => sum + parseFloat(entry[0]) * entry[1], 0);
+        const amt = entries.reduce((sum, entry) => sum + entry[1], 0);
+        const mean = (sum / amt) || '-';
+        const meanMetric = makePollMetric('Mean Average', mean);
+        metrics.push(meanMetric);
+    }
+
+    const sortedPoll = sortOptionsOnVotes(pollData);
+    
+    // calculate median average
+    let expandedPoll = [];
+    for(let i = 0; i < sortedPoll.length; i++){
+        for(let j = 0; j < sortedPoll[i][1]; j++){
+            expandedPoll.push(sortedPoll[i][0]);
+        }
+    }
+    const expandedLength = expandedPoll.length;
+    const midpoint = Math.floor((expandedLength - 1) / 2);
+    console.log(expandedPoll, midpoint)
+    const median = expandedPoll[midpoint] || '-';
+    metrics.push(makePollMetric('Median Average', median));
+
+    // calculate mode average
+    const mode = sortedPoll[0][0];
+    metrics.push(makePollMetric('Mode Average', mode));
+
+    $('#poll-metrics-holder').empty();
+    $('#poll-metrics-holder').append(metrics);
 }
 
 const drawVoteOptions = pollData => {
@@ -40,9 +79,20 @@ const placeVote = voteOptionEl => {
     const voteOption = $(voteOptionEl).attr('option-value');
     console.log(`Placing vote for option: ${voteOption}`);
     $.post(`/vote/${pollId}`, {option: voteOption}, (data, status, xhr) => {
-        console.log(data, status)
+        vt.success('Vote has been cast!');
+        $('#vote-section').hide();
+    }).fail(data => {
+        console.log(data);
+        let message = '';
+        if(data.status == 403) {
+            message = data.responseJSON.error;
+            $('#vote-section').hide();
+        }
+        else {
+            message = `Something went wrong :( Here's the error: ${JSON.stringify(data.responseJSON)}`
+        }
+        vt.error(message, {title: "Whoops!", duration: 7000});
     });
-
 }
 
 const sortOptionsOnVotes = pollData => {
@@ -64,6 +114,15 @@ const makeVoteOption = (name) => {
     entry.val(name);
     entry.text(name);
     return entry;
+}
+
+const makePollMetric = (title, value) => {
+    const metric      = $('<div></div>', {class: 'poll-metric'});
+    console.log(metric)
+    const metricTitle = $(`<div><a>${title}</a></div>`).addClass('poll-metric-title');
+    const metricValue = $(`<div><a>${value}</a></div>`).addClass('poll-metric-value');
+    metric.append([metricTitle, metricValue]);
+    return metric;
 }
 
 const copyLinkToClipboard = el => {

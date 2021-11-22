@@ -36,3 +36,18 @@ const clickIfEnter = val => {
         $('#add-option-button').click();
     }
 }
+
+const clickPreset = el => {
+    const presetButton = $(el);
+    const preset = presetButton.attr('option-preset');
+    console.log(preset)
+
+    presetMap = {
+        'fibonacci': [1, 2, 3, 5, 8, 13, 21],
+        'yes_no': ['Yes', 'No'],
+        'yes_no_maybe': ['Yes', 'No', 'Maybe'],
+        'one_thru_ten': [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    }
+    optionsArray = presetMap[preset] || [];
+    createPoll();
+}
